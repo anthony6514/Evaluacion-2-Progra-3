@@ -1,10 +1,10 @@
 package com.techevent.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -37,7 +37,6 @@ public class Evento {
     private Ponente ponente;
 
     @ManyToMany(mappedBy = "eventos")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<Patrocinador> patrocinadores = new ArrayList<>();
+    @JsonIgnore
+    private List<Patrocinador> patrocinadores;
 }

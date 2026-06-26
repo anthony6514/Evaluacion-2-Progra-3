@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -35,7 +34,5 @@ public class Patrocinador {
         joinColumns = @JoinColumn(name = "patrocinador_id"),
         inverseJoinColumns = @JoinColumn(name = "evento_id")
     )
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<Evento> eventos = new ArrayList<>();
+    private List<Evento> eventos;
 }

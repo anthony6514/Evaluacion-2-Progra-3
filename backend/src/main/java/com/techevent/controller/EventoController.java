@@ -3,21 +3,19 @@ package com.techevent.controller;
 import com.techevent.model.Evento;
 import com.techevent.repository.EventoRepository;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/eventos")
 @CrossOrigin(origins = "*")
 public class EventoController {
 
-    private final EventoRepository eventoRepository;
-
-    public EventoController(EventoRepository eventoRepository) {
-        this.eventoRepository = eventoRepository;
-    }
+    @Autowired
+    private EventoRepository eventoRepository;
 
     @PostMapping
     public Evento crear(@Valid @RequestBody Evento evento) {
@@ -30,44 +28,51 @@ public class EventoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Evento> obtener(@PathVariable Long id) {
-        return eventoRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public Evento obtener(@PathVariable Long id) {
+        Optional<Evento> resultado = eventoRepository.findById(id);
+        if (resultado.isPresent()) {
+            return resultado.get();
+        }
+        return null;
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Evento> actualizar(@PathVariable Long id, @Valid @RequestBody Evento datos) {
-        return eventoRepository.findById(id).map(e -> {
-            e.setNombre(datos.getNombre());
-            e.setTipo(datos.getTipo());
-            e.setFecha(datos.getFecha());
-            e.setCapacidad(datos.getCapacidad());
-            e.setPonente(datos.getPonente());
-            return ResponseEntity.ok(eventoRepository.save(e));
-        }).orElse(ResponseEntity.notFound().build());
+    public Evento actualizar(@PathVariable Long id, @Valid @RequestBody Evento datos) {
+        Optional<Evento> resultado = eventoRepository.findById(id);
+        if (resultado.isPresent()) {
+            Evento evento = resultado.get();
+            evento.setNombre(datos.getNombre());
+            evento.setTipo(datos.getTipo());
+            evento.setFecha(datos.getFecha());
+            evento.setCapacidad(datos.getCapacidad());
+            evento.setPonente(datos.getPonente());
+            return eventoRepository.save(evento);
+        }
+        return null;
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        if (!eventoRepository.existsById(id)) return ResponseEntity.notFound().build();
-        eventoRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public String eliminar(@PathVariable Long id) {
+        if (eventoRepository.existsById(id)) {
+            eventoRepository.deleteById(id);
+            return "Evento eliminado";
+        }
+        return "No encontrado";
     }
 
-    // Consulta 1: Eventos por tipo, ordenados por nombre ASC
+    // Consulta 1: eventos por tipo ordenados por nombre
     @GetMapping("/por-tipo")
     public List<Evento> porTipo(@RequestParam String tipo) {
         return eventoRepository.findByTipoOrderByNombreAsc(tipo);
     }
 
-    // Consulta 3: Eventos con capacidad >= valor y de un ponente específico
+    // Consulta 3: eventos con capacidad minima de un ponente
     @GetMapping("/por-capacidad-ponente")
     public List<Evento> porCapacidadYPonente(@RequestParam Integer capacidad, @RequestParam Long ponenteId) {
         return eventoRepository.findByCapacidadGreaterThanEqualAndPonenteId(capacidad, ponenteId);
     }
 
-    // Consulta 5: Eventos de un ponente, ordenados por fecha DESC
+    // Consulta 5: eventos de un ponente ordenados por fecha
     @GetMapping("/por-ponente")
     public List<Evento> porPonente(@RequestParam Long ponenteId) {
         return eventoRepository.findByPonenteIdOrderByFechaDesc(ponenteId);

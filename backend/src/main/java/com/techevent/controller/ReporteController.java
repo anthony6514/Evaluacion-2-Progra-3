@@ -4,6 +4,7 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import com.techevent.model.Evento;
 import com.techevent.repository.EventoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,14 +18,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class ReporteController {
 
-    private final EventoRepository eventoRepository;
-
-    public ReporteController(EventoRepository eventoRepository) {
-        this.eventoRepository = eventoRepository;
-    }
+    @Autowired
+    private EventoRepository eventoRepository;
 
     @GetMapping("/eventos-pdf")
     public ResponseEntity<byte[]> generarPdf() throws Exception {
+
         List<Evento> eventos = eventoRepository.findAll();
 
         Document document = new Document();
@@ -32,33 +31,33 @@ public class ReporteController {
         PdfWriter.getInstance(document, out);
         document.open();
 
-        // Título
-        Font tituloFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD);
-        Paragraph titulo = new Paragraph("Listado de Eventos - TechEvent", tituloFont);
+        // Titulo
+        Font fTitulo = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD);
+        Paragraph titulo = new Paragraph("Listado de Eventos - TechEvent", fTitulo);
         titulo.setAlignment(Element.ALIGN_CENTER);
-        titulo.setSpacingAfter(20);
         document.add(titulo);
+        document.add(new Paragraph(" "));
 
-        // Tabla
+        // Tabla con 4 columnas
         PdfPTable tabla = new PdfPTable(4);
         tabla.setWidthPercentage(100);
-        tabla.setWidths(new float[]{3, 2, 2, 3});
 
         // Encabezados
-        Font headerFont = new Font(Font.FontFamily.HELVETICA, 11, Font.BOLD);
-        tabla.addCell(new PdfPCell(new Phrase("Nombre del Evento", headerFont)));
-        tabla.addCell(new PdfPCell(new Phrase("Tipo", headerFont)));
-        tabla.addCell(new PdfPCell(new Phrase("Fecha", headerFont)));
-        tabla.addCell(new PdfPCell(new Phrase("Ponente", headerFont)));
+        tabla.addCell("Nombre del Evento");
+        tabla.addCell("Tipo");
+        tabla.addCell("Fecha");
+        tabla.addCell("Ponente");
 
-        // Filas
-        Font cellFont = new Font(Font.FontFamily.HELVETICA, 10);
+        // Datos
         for (Evento e : eventos) {
-            tabla.addCell(new PdfPCell(new Phrase(e.getNombre(), cellFont)));
-            tabla.addCell(new PdfPCell(new Phrase(e.getTipo(), cellFont)));
-            tabla.addCell(new PdfPCell(new Phrase(e.getFecha(), cellFont)));
-            String nombrePonente = e.getPonente() != null ? e.getPonente().getNombre() : "Sin ponente";
-            tabla.addCell(new PdfPCell(new Phrase(nombrePonente, cellFont)));
+            tabla.addCell(e.getNombre());
+            tabla.addCell(e.getTipo());
+            tabla.addCell(e.getFecha());
+            if (e.getPonente() != null) {
+                tabla.addCell(e.getPonente().getNombre());
+            } else {
+                tabla.addCell("Sin ponente");
+            }
         }
 
         document.add(tabla);
