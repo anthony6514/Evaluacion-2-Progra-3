@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechEvent - Gestión de Eventos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 6px; }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        button.rojo { background: #dc3545; }
+        button.rojo:hover { background: #a71d2a; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background: #007bff; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .mensaje { color: green; margin: 5px 0; font-weight: bold; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<h1>TechEvent — Gestión de Eventos</h1>
+
+<!-- REGISTRAR EVENTO -->
+<div class="card">
+    <h2>Registrar Nuevo Evento</h2>
+    <div>
+        <input type="text" id="eventoNombre" placeholder="Nombre del evento">
+        <input type="text" id="eventoTipo" placeholder="Tipo (Conferencia, Taller...)">
+        <input type="text" id="eventoFecha" placeholder="Fecha (ej: 2024-08-15)">
+        <input type="number" id="eventoCapacidad" placeholder="Capacidad">
+        <select id="eventoPonenteId">
+            <option value="">-- Seleccionar Ponente --</option>
+        </select>
+        <button onclick="crearEvento()">Registrar Evento</button>
+    </div>
+    <p id="mensajeCrear" class="mensaje"></p>
+</div>
+
+<!-- LISTAR EVENTOS -->
+<div class="card">
+    <h2>Lista de Eventos</h2>
+    <button onclick="cargarEventos()">Actualizar Lista</button>
+    <table id="tablaEventos">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Fecha</th>
+                <th>Capacidad</th>
+                <th>Ponente</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoTabla">
+            <tr><td colspan="7">Haz clic en "Actualizar Lista" para cargar los eventos.</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ELIMINAR EVENTO -->
+<div class="card">
+    <h2>Eliminar Evento por ID</h2>
+    <input type="number" id="eliminarId" placeholder="ID del evento">
+    <button class="rojo" onclick="eliminarEvento()">Eliminar</button>
+    <p id="mensajeEliminar" class="mensaje"></p>
+</div>
+
+<script>
+    const API = 'http://localhost:8080/api';
+
+    // Cargar ponentes al inicio para el select
+    async function cargarPonentes() {
+        const res = await fetch(`${API}/ponentes`);
+        const ponentes = await res.json();
+        const select = document.getElementById('eventoPonenteId');
+        select.innerHTML = '<option value="">-- Seleccionar Ponente --</option>';
+        ponentes.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nombre;
+            select.appendChild(opt);
+        });
+    }
+
+    async function crearEvento() {
+        const nombre = document.getElementById('eventoNombre').value;
+        const tipo = document.getElementById('eventoTipo').value;
+        const fecha = document.getElementById('eventoFecha').value;
+        const capacidad = parseInt(document.getElementById('eventoCapacidad').value);
+        const ponenteId = document.getElementById('eventoPonenteId').value;
+
+        if (!nombre || !tipo || !fecha || !capacidad || !ponenteId) {
+            document.getElementById('mensajeCrear').textContent = 'Por favor completa todos los campos.';
+            document.getElementById('mensajeCrear').className = 'error';
+            return;
+        }
+
+        const body = {
+            nombre,
+            tipo,
+            fecha,
+            capacidad,
+            ponente: { id: parseInt(ponenteId) }
+        };
+
+        const res = await fetch(`${API}/eventos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const msg = document.getElementById('mensajeCrear');
+        if (res.ok) {
+            msg.textContent = 'Evento registrado correctamente.';
+            msg.className = 'mensaje';
+            cargarEventos();
+        } else {
+            msg.textContent = 'Error al registrar el evento.';
+            msg.className = 'error';
+        }
+    }
+
+    async function cargarEventos() {
+        const res = await fetch(`${API}/eventos`);
+        const eventos = await res.json();
+        const tbody = document.getElementById('cuerpoTabla');
+
+        if (eventos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7">No hay eventos registrados.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = eventos.map(e => `
+            <tr>
+                <td>${e.id}</td>
+                <td>${e.nombre}</td>
+                <td>${e.tipo}</td>
+                <td>${e.fecha}</td>
+                <td>${e.capacidad}</td>
+                <td>${e.ponente ? e.ponente.nombre : 'Sin ponente'}</td>
+                <td><button class="rojo" onclick="eliminarEventoDirecto(${e.id})">Eliminar</button></td>
+            </tr>
+        `).join('');
+    }
+
+    async function eliminarEvento() {
+        const id = document.getElementById('eliminarId').value;
+        if (!id) return;
+        await eliminarEventoDirecto(id);
+        document.getElementById('eliminarId').value = '';
+    }
+
+    async function eliminarEventoDirecto(id) {
+        const res = await fetch(`${API}/eventos/${id}`, { method: 'DELETE' });
+        const msg = document.getElementById('mensajeEliminar');
+        if (res.ok || res.status === 204) {
+            msg.textContent = `Evento ${id} eliminado.`;
+            msg.className = 'mensaje';
+            cargarEventos();
+        } else {
+            msg.textContent = `No se encontró el evento con ID ${id}.`;
+            msg.className = 'error';
+        }
+    }
+
+    // Inicializar
+    cargarPonentes();
+    cargarEventos();
+</script>
+
+</body>
+</html>
