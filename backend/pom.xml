@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.techevent</groupId>
-    <artifactId>techevent-backend</artifactId>
+    <artifactId>backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>techevent-backend</name>
+    <name>backend</name>
     <description>Sistema de gestion de eventos tecnologicos</description>
 
     <properties>
